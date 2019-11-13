@@ -1,0 +1,123 @@
+
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.net.URL;
+import java.util.*;
+
+/**
+ *@author Varun Vajpayee,CFA
+ *  Step 1) Validations are performed first as part of the set up (in contructor)
+ *  Step 2) Adjacent routes are idenfied as part this method:initializeAdjacentRoutes(called from constructor)
+ *  Step 3) Once adjacentRoutes has set up as part of Step 2) then source to destination path is identified by traversing graph in recursive manner
+ *  Please uncomment lines to enable debugging
+ */
+public class Spacebus3000 {
+    private Map<String,Set<String>> adjacentRoutes = new HashMap<String, Set<String>>();
+
+    private Spacebus3000(String[] args) {
+        if(args ==null || args.length!=3 || args[0]==null || args[0].length()<1 || args[1]==null || args[1].length()<1  || args[2]==null|| args[2].length()<1 ){
+            System.out.println("Insufficient arguments to program so existing the program");
+            throw new RuntimeException("INSUFFICIENT PARAMETERS");
+        }
+        initializeAdjacentRoutes(args[0]);
+    }
+
+    private boolean isRouteAvailableDFS(String source, String destinationPort,Set<String> visitedPorts){
+        if(visitedPorts.contains(source)){
+            return false;
+        }
+        visitedPorts.add(source);
+        Set<String> adjacentPorts = adjacentRoutes.get(source);
+        if(source.equals(destinationPort)|| adjacentPorts!=null && adjacentPorts.contains(destinationPort)){
+            return true;
+        }
+        for(String nextPort:adjacentPorts){
+                if(isRouteAvailableDFS(nextPort,destinationPort,visitedPorts)){
+                    return true;
+                }
+        }
+        return false;
+    }
+
+    private void initializeAdjacentRoutes(String fileName) {
+        URL path = ClassLoader.getSystemResource(fileName);
+        if(path==null) {
+            System.out.println("File not found name:"+fileName);
+            return;
+        }
+        String line = "";
+        try (BufferedReader br = new BufferedReader(new FileReader(path.getFile()))) {
+            while ((line = br.readLine()) != null) {
+                // use comma as separator
+                String[] ports = line.split(",");
+                for(int i=0;i<ports.length;i++){
+                    String currentPort = ports[i].trim();
+                    Set<String> adjacentPorts = adjacentRoutes.get(currentPort);
+                    if(adjacentPorts == null){
+                        adjacentPorts = new HashSet<String>();
+                        adjacentRoutes.put(currentPort,adjacentPorts);
+                    }
+                    for(int j=0;j<ports.length;j++){
+                        if(i==j){
+                            continue;
+                        }
+                        else if(!currentPort.equals(ports[j].trim())){
+                            adjacentPorts.add(ports[j].trim());
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        //UNCOMMENT TO DEBUG
+       for(Map.Entry<String,Set<String>> entry:adjacentRoutes.entrySet()){
+            System.out.println(String.format("Port:%s --> %s",entry.getKey(),entry.getValue()));
+        }
+    }
+
+    private boolean isRouteAvailableBFS(String source, String destinationPort) {
+        Set<String> adjacentPorts = adjacentRoutes.get(source);
+        if(source.equals(destinationPort)|| adjacentPorts!=null && adjacentPorts.contains(destinationPort)){
+            return true;
+        }
+        LinkedList<String> queue = new LinkedList<String>();
+        //queue.get(5);
+        queue.addAll (adjacentRoutes.get(source));
+        Iterator<String> iterator = queue.iterator();
+        while(!queue.isEmpty()){
+            String nextChild = queue.remove();
+            adjacentPorts  = adjacentRoutes.get(nextChild);
+            if(nextChild.equals(destinationPort)|| adjacentPorts!=null && adjacentPorts.contains(destinationPort)){
+                return true;
+            }
+            else{
+                queue.addAll(adjacentPorts);
+            }
+        }
+        return false;
+    }
+
+    public static void main(String[] args){
+        Spacebus3000 spacebus3000 = new Spacebus3000(args);
+        Set<String> visitedPorts = new LinkedHashSet<>();
+        if(!spacebus3000.adjacentRoutes.containsKey(args[1].trim()) || !spacebus3000.adjacentRoutes.containsKey(args[2].trim()))
+        {
+            System.out.println("no");
+            //UNCOMMENT TO DEBUG
+            //System.out.println("visitedPorts:"+visitedPorts);
+            return;
+        }
+        boolean routeAvailable = spacebus3000.isRouteAvailableDFS(args[1].trim(), args[2].trim(),visitedPorts);
+        //boolean routeAvailable = spacebus3000.isRouteAvailableBFS(args[1].trim(), args[2].trim());
+        if (routeAvailable) {
+            System.out.println("Yes");
+        } else {
+            System.out.println("no");
+        }
+        //UNCOMMENT TO DEBUG
+        //System.out.println("visitedPorts:"+visitedPorts);
+    }
+}
